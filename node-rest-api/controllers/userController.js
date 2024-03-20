@@ -1,5 +1,5 @@
 const User = require('../models/user');
-
+const bcrypt = require('bcrypt');
 
 exports.getAllUsers = async (req, res) => {
     try {
@@ -18,7 +18,8 @@ exports.createUsers = async (req, res) => {
         if (existUsername) {
             res.status(403).json({ message: "user already exist" });
         } else {
-            const newUser = new User({ name, email_id, password, employee_id });
+            const newpassword = await bcrypt.hash(password, 10);
+            const newUser = new User({ name, email_id, password: newpassword, employee_id });
             const savedUser = await newUser.save();
             res.status(201).json(savedUser);
         }
@@ -31,12 +32,19 @@ exports.createUsers = async (req, res) => {
 exports.loginUser = async (req, res) => {
     const { email_id, password } = req.body;
     try {
-        const existUsername = await User.findOne({ email_id: email_id, password: password });
-        if (existUsername) {
-            res.status(200).json({ message: "user login successfully" });
+
+        const existUser = await User.findOne({ email_id: email_id });
+        if (existUser) {
+            const passwordMatch = await bcrypt.compare(password, existUser.password);
+            if (passwordMatch) {
+                res.status(200).json({ message: "user login successfully" });
+            } else {
+                res.status(404).json({ message: "Invalid username or password please check once" });
+            }
         } else {
-            res.status(404).json({ message: "user not found" });
+            res.status(200).json({ message: "Invalid username or password please check once" });
         }
+
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
