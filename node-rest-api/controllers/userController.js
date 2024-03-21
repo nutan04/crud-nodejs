@@ -1,5 +1,7 @@
 const User = require('../models/user');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+
 
 exports.getAllUsers = async (req, res) => {
     try {
@@ -37,7 +39,11 @@ exports.loginUser = async (req, res) => {
         if (existUser) {
             const passwordMatch = await bcrypt.compare(password, existUser.password);
             if (passwordMatch) {
-                res.status(200).json({ message: "user login successfully" });
+                const token = jwt.sign({ email_id: existUser.email_id }, 'your_secret_key');
+                // Store token in session
+                req.session.newtoken = token;
+
+                res.status(200).json({ message: "user login successfully", _token: token, user: existUser });
             } else {
                 res.status(404).json({ message: "Invalid username or password please check once" });
             }
